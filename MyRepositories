@@ -1,0 +1,157 @@
+#!/bin/bash
+#CREATEUR FIRST NAME: Mackendy-Pierre
+#LAST NAME: Anselin
+#EMAIL: mackendy-pierre.anselin@epitech.eu
+
+helpMyRepository() {
+  printf "\tCREATE MY REPOSITORY --help\n"
+  printf "choices your action between : \n\t1 create repository (will create your repository name give right rwx to
+            ramassage-tek and to offer you to add right to others peoples)"
+  printf "\n\t2 give right rwx to repository name to others peoples"
+  printf "\n\t3 clone repository name from people\n"
+  printf "\nlist\t\tshow all your repositories"
+  printf "\nlist 'word'\tshow you the repositories who contain the word in then name\n"
+  exit 0
+}
+
+needToclone() {
+  read -p "Do you want to clone a repository 'yes' or 'no' ? : " need_clone
+  if [[ "$need_clone" == "yes" ]]; then
+    read -p 'Repository name ? : ' repo_name
+    cloneRepo $repo_from $repo_name
+  elif [[ "$need_clone" == "no" ]]; then
+    exit 0
+  else
+    printf "Error: just write 'yes' or 'no'\n"
+    needToclone $repo_from
+  fi
+}
+
+blihRepository() {
+  spec_repo_name=$2
+  if [[ -z $spec_repo_name ]]; then
+    blih -u "$repo_from" repository list
+  else
+    blih -u "$repo_from" repository list | grep "$spec_repo_name"
+  fi
+
+  if [[ $? -eq 0 ]]; then
+    needToclone $repo_from
+  else
+    printf "Error: something wrong happened\n"
+    blihRepository $repo_from $spec_repo_name
+  fi
+}
+
+createRepo() {
+  blih -u "$repo_from" repository create "$repo_name"
+  if [[ $? == 0 ]]; then
+    printf "%s: has been created\n" "$repo_name"
+  else
+    printf "Can't create %s repository\n" "$repo_name"
+  fi
+  blih -u "$repo_from" repository setacl "$repo_name" ramassage-tek r
+  if [[ $? == 0 ]]; then
+    printf "ramassage-tek: got the right r to %s from %s\n" "$repo_name" "$people_name" "$repo_from"
+  else
+    printf "Can't put right rwx to %s from\n" "$people_name" "$repo_name" "$repo_from"
+  fi
+  git clone git@git.epitech.eu:/"$repo_from"/"$repo_name"
+  if [[ $? == 128 ]]; then
+    printf "Can't clone %s from %s\n" "$repo_name" "$repo_from"
+  else
+    printf "%s: has been cloned from %s\n" "$repo_name" "$repo_from"
+  fi
+  giveRight $repo_from $repo_name
+}
+
+giveRight() {
+  read -p 'How many people do you want add ? : ' nbr_people
+  while true; do
+    if [[ "$nbr_people" > 0 ]]; then
+      for i in $(seq 1 "$nbr_people"); do
+        read -p 'People Name : ' people_name
+        blih -u "$repo_from" repository setacl "$repo_name" "$people_name" rwx
+        if [[ $? == 0 ]]; then
+          printf "\n%s: got the right rwx to %s from %s\n" "$people_name" "$repo_name" "$repo_from"
+        else
+          printf "\nCan't put right rwx to %s from\n" "$people_name" "$repo_name" "$repo_from"
+        fi
+      done
+      exit 0
+    elif [[ "$nbr_people" == 0 ]]; then
+      exit 0
+    fi
+    printf "Error: put number over zero please\n"
+    read -p 'How many people do you want add ? : ' nbr_people
+  done
+}
+
+cloneRepo() {
+  git clone git@git.epitech.eu:/"$repo_from"/"$repo_name"
+  if [[ $? == 128 ]]; then
+    printf "\nCan't clone %s from %s\n" "$repo_name" "$repo_from"
+  else
+    printf "\n%s: has been cloned from %s\n" "$repo_name" "$repo_from"
+  fi
+}
+
+getLogin() {
+  login="mackendy-pierre.anselin@epitech.eu"
+  read -p "Does the repository come from ${login} login 'yes' or 'no' ? : " is_from_user
+  if [[ "$is_from_user" == "yes" ]]; then
+    echo $login
+  elif [[ "$is_from_user" == "no" ]]; then
+    read -p 'Repository from ? : ' repo_from
+    echo $repo_from
+  else
+    getLogin
+  fi
+}
+
+getRepositoryName() {
+  if [[ -z "$repo_from" ]]; then
+    exit 0
+  fi
+  read -p 'Name of repository ? : ' repo_name
+  if [[ -z "$repo_name" ]]; then
+    exit 0
+  else
+    echo $repo_name
+  fi
+}
+
+runAction() {
+  read -p 'Do you want create repository (1) or add right (2) or just clone a repository (3) ? : ' reponse
+
+  while [[ -z "$reponse" || "$reponse" > 3 || "$reponse" < 1 ]]; do
+    printf "Error: put number between 1-3 please\n"
+    read -p 'Do you want create repository (1) or add right (2) or just clone a repository (3) ? : ' reponse
+  done
+
+  case "$reponse" in
+  '1')
+    createRepo $repo_from $repo_name
+    ;;
+  [2])
+    giveRight $repo_from $repo_name
+    ;;
+  [3])
+    cloneRepo $repo_from $repo_name
+    ;;
+  *)
+    exit 0
+    ;;
+  esac
+}
+
+if [[ $1 == "--help" ]]; then
+  helpMyRepository
+elif [[ $1 == "list" ]]; then
+  repo_from="$(getLogin)"
+  blihRepository $repo_from $2
+else
+  repo_from="$(getLogin)"
+  repo_name="$(getRepositoryName)"
+  runAction $repo_from $repo_name
+fi
