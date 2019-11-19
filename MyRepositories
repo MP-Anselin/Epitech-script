@@ -145,13 +145,17 @@ runAction() {
   esac
 }
 
-if [[ $1 == "--help" ]]; then
-  helpMyRepository
-elif [[ $1 == "list" ]]; then
-  repo_from="$(getLogin)"
-  blihRepository $repo_from $2
-else
-  repo_from="$(getLogin)"
-  repo_name="$(getRepositoryName)"
-  runAction $repo_from $repo_name
-fi
+main_script() {
+  if [[ $1 == "--help" ]]; then
+    helpMyRepository
+  elif [[ $1 == "list" ]]; then
+    repo_from="$(getLogin)"
+    blihRepository $repo_from $2
+  else
+    repo_from="$(getLogin)"
+    repo_name="$(getRepositoryName)"
+    runAction $repo_from $repo_name
+  fi
+}
+
+main_script
