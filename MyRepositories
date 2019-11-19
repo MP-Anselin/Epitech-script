@@ -158,4 +158,5 @@ main_script() {
   fi
 }
 
-main_script
+main_script $1 $2
+
